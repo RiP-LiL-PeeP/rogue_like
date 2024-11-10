@@ -3,11 +3,26 @@ package main
 import (
 	"log"
 	assets "rogue_like/internal/assets"
+	"rogue_like/internal/controls"
+	"rogue_like/internal/game"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	audio "github.com/hajimehoshi/ebiten/v2/audio"
+	input "github.com/quasilyte/ebitengine-input"
 	resource "github.com/quasilyte/ebitengine-resource"
+	"github.com/quasilyte/gmath"
 )
+
+type Player struct {
+	pos gmath.Vec
+	img *ebiten.Image
+}
+
+type myGame struct {
+	ctx *game.Context
+}
+
+
 
 func main() {
 	// Создаём загрузчик ресурсов
@@ -16,41 +31,38 @@ func main() {
 	assets.RegisterResources(loader)
 
 	g := &myGame{
-		windowWidth:  320,
-		windowHeight: 240,
+		windowWidth:  800,
+		windowHeight: 600,
 		loader:       loader, // Добавляем загрузчик в структуру
 	}
 
 	ebiten.SetWindowSize(g.windowWidth, g.windowHeight)
 	ebiten.SetWindowTitle("Ebitengine Quest")
+	g.init()
 
+	g.inputSystem.Init(input.SystemConfig{
+		DevicesEnabled: input.AnyDevice,
+	})
+
+	g.input = g.inputSystem.NewHandler(0, controls.DefaultKeymap)
 	// Запускаем игру
 	if err := ebiten.RunGame(g); err != nil {
 		log.Fatal(err)
 	}
 }
 
-type myGame struct {
-	windowWidth  int
-	windowHeight int
-	loader       *resource.Loader // Добавляем loader в структуру
-}
 
 func (g *myGame) Update() error {
-	return nil
+	g.ctx.InputSystem.Update()
+	g.ctx.CurrentScene().Update()
+    return nil
 }
 
 func (g *myGame) Draw(screen *ebiten.Image) {
-	witch := g.loader.LoadImage(assets.ImageWitch).Data
-	var options ebiten.DrawImageOptions
-	screen.DrawImage(witch, &options)
+	g.ctx.CurrentScene.Draw(screen)
 }
 
-func (g *myGame) Layout(w, h int) (int, int) {
-	// Layout - тема для продвинутых, поэтому нам пока
-	// достаточно считать, что screen size = window size.
-	return g.windowWidth, g.windowHeight
-}
+
 
 func createLoader() *resource.Loader {
 	sampleRate := 44100
